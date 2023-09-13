@@ -1,0 +1,98 @@
+##Method Used
+
+
+'''
+1. Input image is a mask of the screen region in white
+
+2. Used Opening morphological operation over image to remove noise
+
+3. Used Dilation operation over image (the foreground object is expanded. The things develop near the boundary, and an expanded object is formed. Bright regions in an image tend to “glow up” after Dilation, which usually results in an enhanced image.)
+
+4. Used Connected component labeling (also known as connected component analysis, blob extraction, or region labeling) is an algorithmic application of graph theory used to determine the connectivity of “blob”-like regions in a binary image
+
+5. Used Thresholding (comparing each pixel value of the image (pixel intensity) to a specified threshold. This divides all the pixels of the input image into 2 groups: Pixels having intensity value lower than threshold. Pixels having intensity value greater than threshold.)
+
+6. Used Closing morphological operation ( image processing that involves dilation followed by erosion. It is used to close small holes in an object and to merge broken parts of an object. In other words, it "fills" the gaps in an object, making it more complete.
+The dilation step expands the object and the erosion step shrinks it back down. The size of the structuring element used in the dilation and erosion operations determines the extent of the filling process.
+Closing is often used in image processing to remove small noise or artifacts and to smooth object boundaries.)
+
+7. Used contours detection to find boundary and end coordinates of one with max area is found and region is cropped
+'''
+
+
+
+import numpy as np
+import cv2
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+#input Image path inplace of path
+img = cv2.imread(path_type1)
+plt.imshow(img)
+plt.show()
+
+kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1,1))
+opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+
+print("output of opening")
+plt.imshow(opening)
+plt.show()
+
+kernel = np.ones((5,5),np.uint8)
+dilation = cv2.dilate(opening, kernel)
+
+gray = cv2.cvtColor(dilation, cv2.COLOR_BGR2GRAY)
+n, labels = cv2.connectedComponents(gray)
+
+print("output of connected components")
+plt.imshow(labels)
+plt.show()
+ret,thresh1 = cv2.threshold(gray,170,255,cv2.THRESH_BINARY)
+
+
+print("output of Threshoding")
+plt.imshow(thresh1)
+plt.show()
+
+
+kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
+opening = cv2.morphologyEx(thresh1, cv2.MORPH_OPEN, kernel)
+
+print('check')
+plt.imshow(opening)
+plt.show()
+# dilation + erosion
+closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+
+print('check1')
+plt.imshow(closing)
+plt.show()
+
+
+print("output of Closing")
+plt.imshow(closing)
+plt.show()
+
+
+contours, _ = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+area = [int(cv2.contourArea(c)) for c in contours]
+
+max = 0
+for j in area:
+  if j>max:
+    max = j
+max_area_contour = contours[area.index(max)]
+
+x, y, w, h = cv2.boundingRect(max_area_contour)
+
+print("x,y coords, width, height")
+print(x,y,w,h)
+
+# Here istead of "img" change it to the variable name of original image when you loaded it
+monitor = img[y:y+h, x:x+w]
+
+
+plt.imshow(monitor)
+plt.show()
